@@ -21,9 +21,7 @@ relevant.
 
 | Skill | What it does |
 |-------|-------------|
-| `horsley-grant-writing` | Drafts NIH grant sections (Specific Aims, Significance, Approach) in our lab's style |
-| `horsley-methods` | Writes methods sections for skin biology / wound healing manuscripts |
-| `horsley-figure-legends` | Formats figure legends to journal standards |
+| `horsley-figures` | Drafts and organizes figures |
 
 ## Updating a skill
 
