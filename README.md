@@ -1,51 +1,70 @@
-# Foster 2021 Wound Fibroblast Reanalysis: Progenitor Contribution to Wound Healing
+# Horsley Lab Claude Skills
 
-## Summary
+Custom [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills for the Horsley Lab at Yale. These skills teach Claude our lab's conventions for data analysis, figure preparation, and scientific writing.
 
-Reanalysis of Foster et al. 2021 PNAS (GSE178758) to ask whether progenitor-like
-fibroblast states drive dermal wound healing, and whether the same populations
-are implicated in SSc fibrosis. Uses scRNA-seq, scATAC-seq, and Visium spatial
-transcriptomics from Rainbow-labeled wound fibroblasts (POD 0, 2, 7, 14).
+## What are skills?
 
-## Core question
+Claude Code skills are markdown files that give Claude specific instructions for particular tasks — how to organize an analysis project, how to audit a script, how to structure a figure. Each skill has a short **description** that tells Claude when to activate it, and a **body** with the actual instructions.
 
-Do progenitor-like fibroblast populations (DPP4+/PI16+, SFRP2+, adipogenic
-DLK1+) initiate and drive wound repair, and do they persist in SSc skin
-fibrosis?
+There are two kinds:
 
-## Reproduction
+- **Automatic skills** load on their own when Claude detects a relevant task. For example, when you ask Claude to set up a new analysis project, `horsley-lab-conventions` loads automatically.
+- **User-invoked skills** (slash commands) are triggered by typing a command like `/audit-script`. These run specific workflows on demand.
 
-Run scripts in numbered order:
+## Prerequisites
 
-1. `scripts/01_download_and_qc.Rmd` — download GSE178758, initial QC
-2. `scripts/02_integration_clustering.Rmd` — integrate timepoints, cluster, annotate
-3. `scripts/03_progenitor_scoring.Rmd` — score progenitor signatures across cells
-4. `scripts/04_trajectory_analysis.Rmd` — pseudotime and RNA velocity
-5. `scripts/05_scATAC_chromatin_priming.Rmd` — multi-lineage priming assessment
-6. `scripts/06_spatial_visium.Rmd` — spatial mapping of progenitor states
-7. `scripts/07_ssc_integration.Rmd` — integration with Tabib SSc dataset
+You need [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed before adding lab skills. See [Anthropic's install guide](https://docs.anthropic.com/en/docs/claude-code/overview) to get started.
 
-## Data sources
+## Install
 
-- **GSE178758** — Foster et al. 2021 PNAS: scRNA-seq, scATAC-seq, Visium of
-  stented mouse wounds, POD 0/2/7/14, inner vs outer regions, mCerulean+
-  Rainbow-labeled fibroblasts
-- **GSE138669** or current Tabib accession — SSc vs healthy dermal fibroblasts
-  (pending accession confirmation)
-- **GSE113854 / GSE113605** — Guerrero-Juarez/Plikus wound fibroblasts
-  (optional secondary validation)
+**In Positron / VS Code:**
 
-## Key caveats
+1. Type `/plugins` in the Claude Code chat panel to open the plugin manager
+2. Go to the **Marketplaces** tab
+3. Add `vhorsley/horsley-lab-skills`
+4. Switch to the **Plugins** tab and install `horsley-lab-skills`
 
-- Foster scRNA-seq is sorted on mCerulean+ only — single Rainbow color, ~25%
-  of recombined fibroblasts. Cluster proportions are biased.
-- Lineage-negative sort excludes CD31+/CD45+/TER119+ cells. No myeloid
-  contribution can be assessed from this dataset.
-- Most cells are reticular (DLK1+/SCA1-); papillary and hypodermal are
-  underrepresented.
-- No clonal identity retained at the transcriptome level — Rainbow color was
-  used for sorting only.
+**In the terminal CLI:**
 
-## Contact
+```
+/plugin marketplace add vhorsley/horsley-lab-skills
+/plugin install horsley-lab-skills
+```
 
-Horsley Lab. Primary analyst: TBD.
+Skills are then available as `/horsley-lab-skills:skill-name` (e.g., `/horsley-lab-skills:audit-script`).
+
+## Updates
+
+Skills update automatically when you restart Claude Code. To update manually:
+
+```
+/plugin uninstall horsley-lab-skills
+/plugin install horsley-lab-skills
+```
+
+## Skill reference
+
+### Workflows (slash commands)
+
+| Skill | Description |
+|-------|-------------|
+| `/audit-script` | Systematic audit of data analysis scripts for bugs, analytical reasoning, data handling, style, and reproducibility |
+
+### Data analysis conventions
+
+| Skill | Description |
+|-------|-------------|
+| `horsley-lab-conventions` | Standard project and script organization for R-based data analysis |
+| `cleanup-scripts` | End-of-session script consolidation — moves scratch files into numbered `.Rmd` pipeline |
+
+### Figures and writing
+
+| Skill | Description |
+|-------|-------------|
+| `horsley-figures` | Drafts and organizes figures |
+
+## Improving skills
+
+If a skill does something wrong, doesn't handle a situation you ran into, or you have an idea for a new one — open a GitHub issue or email [valerie.horsley@yale.edu](mailto:valerie.horsley@yale.edu).
+
+When reporting, include which skill was involved, what happened, and what you expected.
