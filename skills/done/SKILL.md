@@ -1,491 +1,203 @@
 ---
-name: new-project
+name: done
 description: >
-  Use when creating a new project, setting up a project from scratch, or when the user
-  invokes /new-project. Scaffolds directory structure, renv, git, and Claude Code
-  configuration. Supports data science and general project types. R-primary lab.
+  Use when ending a session, wrapping up work, or when the user says "done", "wrap up",
+  "let's commit", or "end of session". Summarizes work, updates docs, and commits.
 user-invocable: true
 ---
 
-# Create a New Project
+# End of Session Wrap-up
 
-When the user invokes `/new-project`, scaffold a complete project with version control and
-Claude Code configuration. The project type determines which conventions, directories, and
-environments to set up.
-
-Run this skill from **inside the target project directory** (which may be empty or newly created).
+When the user invokes `/done`, perform these end-of-session tasks in order.
 
 ---
 
-## 1. Gather Project Information
+## 0. Detect Project Type
 
-### Question 1: Project type
-- **Data science** (default) — Analysis project with numbered `.Rmd` scripts, `data/` +
-  `outputs/` directories, renv, Quarto analysis documents
-- **General** — Any other project (tools, packages, lab resources, scripts without full
-  data science conventions)
+Check the project's `.claude/CLAUDE.md` for a `project-type:` field:
 
-### Question 2: Project basics (all types)
-- **Project name**: Default to current directory name
-- **Brief description**: 1–2 sentences for CLAUDE.md and README
+- **`data-science`** — Full wrap-up including all steps
+- **`general`** (or no field found) — Skip steps marked **[Data Science only]**
 
-### For Data Science projects, also ask:
-
-#### Question 3: Python needed?
-- **No** (default) — R only
-- **Yes** — R + Python (ask which packages are needed)
-
-#### Question 4: Layout
-- **Flat** (default) — Single `scripts/` directory, for projects with a single analytical thread
-- **Sectioned** — Subdirectories under `scripts/`, `data/`, `outputs/` for larger projects
-  with multiple analytical threads (e.g., `scrna`, `spatial`, `proteomics`)
-
-If sectioned, ask for section names.
-
-#### Question 5: YCRC Bouchet cluster?
-- **Yes** — This project will also run on Yale's Bouchet HPC cluster
-- **No** (default) — Local analysis only
-
-If yes:
-- Adds `batch/` directory (tracked in git — SLURM batch scripts)
-- Adds `logs/` directory (gitignored — SLURM output, ephemeral)
-- Adds a "Dual Environment: Local + Cluster" section to CLAUDE.md
-- Notes cluster path conventions (see below)
-- Batch scripts use `BASEDIR=$(git rev-parse --show-toplevel)` — no hardcoded paths
-
-### For all types:
-
-#### Question: GitHub
-- **Personal account** (`vhorsley`) — default for most lab projects
-- **Other org** — if the project belongs to a collaboration or external org
-
-#### Question: Private or public?
-- **Private** (default, recommended for unpublished data)
-- **Public**
-
-#### Question: Changelog?
-- **Yes** (recommended) — creates `CHANGELOG.md` to track changes over time
-- **No** — skip; can always add later
+If no field exists, infer: `renv.lock`, `outputs/`, or numbered `XX_*.Rmd` scripts →
+data science. Otherwise → general.
 
 ---
 
-## 2. Create Directory Structure
+## 1. Summarize Work and Decisions
 
-### Data Science — Flat layout
-
-```bash
-mkdir -p data/raw data/processed scripts/scratch outputs/figures outputs/tables docs .claude
-touch data/raw/.gitkeep data/processed/.gitkeep scripts/scratch/.gitkeep \
-      outputs/figures/.gitkeep outputs/tables/.gitkeep docs/.gitkeep
-```
-
-### Data Science — Sectioned layout
-
-For each section (e.g., `scrna`, `spatial`):
-
-```bash
-mkdir -p data/raw data/processed outputs/figures outputs/tables docs .claude
-mkdir -p scripts/{section} scripts/scratch
-mkdir -p data/{section} outputs/{section}
-touch data/raw/.gitkeep data/processed/.gitkeep scripts/scratch/.gitkeep docs/.gitkeep
-```
-
-### Cluster directories (if Bouchet = yes)
-
-```bash
-mkdir -p batch logs
-```
-
-`batch/` is tracked in git (SLURM scripts are version-controlled).
-`logs/` is gitignored (SLURM output is ephemeral).
-
-### General layout
-
-```bash
-mkdir -p .claude
-```
-
-Do NOT create `data/`, `outputs/`, or `scripts/` — let the user organize as appropriate.
+Briefly list what was completed this session:
+- Scripts created or modified
+- Data files created or modified
+- Documentation changes
+- Key analytical or design decisions made
 
 ---
 
-## 3. R + renv (Data Science — always; General — if using R)
+## 1b. Update Session Log in Project CLAUDE.md
 
-### Initialize renv
+Append a new entry to the **Session Log** section at the bottom of the project's
+`.claude/CLAUDE.md`. This is a rolling log of the last 5 sessions — it's the primary
+place future sessions look for "what to do next."
 
-```r
-renv::init()
-install.packages(c("tidyverse", "here"))
-renv::snapshot()
+### Format
+
+```markdown
+## Session Log
+<!-- Maintained by /done. Most recent first. Keep last 5 entries. -->
+
+### YYYY-MM-DD — Short title
+- **Plans:** [plan name(s) worked on, or "None"]
+- **Work:** [1-2 sentences on what was done]
+- **Next:** [bullet list of follow-up items for future sessions]
 ```
 
-### Lab policy
+### Rules
 
-- Every R data science project uses renv
-- Snapshot after every package install: `renv::snapshot()`
-- Commit `renv.lock`, `renv/activate.R`, `.Rprofile` to git
-- Do NOT commit `renv/library/` or `renv/staging/`
+- **Most recent first** — new entry goes at the top of the list
+- **Same-day updates** — if an entry for today's date already exists, **replace it**
+  rather than adding a duplicate. Merge the work descriptions and update Next items.
+- **Trim to 5 entries** — delete the oldest entry if there are more than 5
+- **Short title** should disambiguate sessions (e.g., "QC filtering", "Clustering",
+  "DE analysis")
+- **Plans line** — list which planning documents were worked on. Write "None" if no
+  plans were involved.
+- **Next items** — be specific and actionable. These are the main value of the log.
+- If the Session Log section doesn't exist yet, create it at the bottom of the file.
 
 ---
 
-## 4. Python environment (only if Python = yes)
+## 2. Update Relevant Planning Documents
 
+Only update planning documents **directly relevant to this session's work**. Do NOT
+read all documents — identify the 1-2 that matter from session context.
+
+Planning documents live in `.claude/` as markdown files (e.g.,
+`.claude/scrna_analysis_plan.md`, `.claude/figure_plan.md`).
+
+For each relevant planning document:
+
+**a. Status tables** — Mark completed phases/tasks. Add new phases if needed. When a
+phase is marked complete, collapse its detailed content to a 3-5 line summary (what
+was done, key outcomes). Before collapsing, ensure forward-looking information needed
+by future phases is captured elsewhere in the plan.
+
+**b. Script and file tracking** — Add new scripts, mark replaced ones as legacy,
+update modified entries.
+
+**c. Task lists** — Check/uncheck items as appropriate.
+
+**d. Key decisions** — If analytical decisions were made this session (threshold
+choices, method selections, sample exclusions), add them to a "Key Decisions" section.
+These should be permanent — don't collapse or delete them.
+
+Show proposed changes before editing.
+
+### Planning document format
+
+If no planning document exists for a multi-session project, offer to create one:
+
+```markdown
+# {Project/Analysis Name} Plan
+
+## Status
+| Phase | Status | Notes |
+|-------|--------|-------|
+| {phase} | ⬜ Not started | |
+
+## Key Decisions
+(Record permanent analytical decisions here — threshold choices, method selections,
+sample exclusions, etc.)
+
+## Script Registry
+| Script | Purpose | Status |
+|--------|---------|--------|
+| `scripts/01_qc.Rmd` | QC and filtering | ✅ Done |
+
+## Next Steps
+- (Populated by /done at each session)
+```
+
+Status icons: ✅ Done · 🔄 In progress · ⬜ Not started · ⚠️ Needs review
+
+---
+
+## 3. Update Project Documentation (if needed)
+
+Only do these checks if the session actually changed something relevant. Skip silently
+otherwise.
+
+### Project CLAUDE.md conventions
+
+If new conventions, gotchas, or important patterns were discovered this session, propose
+additions. Only record things that are **surprising or counter-default** — skip anything
+Claude would infer from the codebase.
+
+### CHANGELOG.md
+
+If the project has a `CHANGELOG.md` in its root directory:
+- Review what was done this session
+- Propose a changelog entry under today's date (Added/Changed/Fixed/Removed sections)
+- If today's date already has an entry, append to it rather than creating a duplicate
+- Show proposed changes before editing
+- If no `CHANGELOG.md` exists, skip silently — do not suggest creating one
+
+---
+
+## 4. Script Cleanup [Data Science only]
+
+Check `scripts/scratch/` for files that accumulated this session:
+
+- List all files in `scripts/scratch/`
+- For each file, identify which numbered `.Rmd` script it belongs to (or whether it
+  needs a new numbered script)
+- Show the user the proposed consolidation and ask for confirmation
+- After confirmation, add the code to the target `.Rmd` and delete the scratch file
+
+If `scripts/scratch/` is empty, skip silently.
+
+This replaces the standalone `cleanup-scripts` skill — running `/done` is sufficient
+at end of session.
+
+---
+
+## 5. Git Commit
+
+Run `git status` to check for uncommitted changes.
+
+If there are changes:
+- **Always stage specific files by name (`git add file1 file2`), NEVER use
+  `git add .` or `git add -A`** — broad staging picks up changes from other sessions
+- **Only include files actually created or modified during THIS session**
+- Use conversation context as the primary record of what you did
+- Show the user the proposed files and commit message before staging
+- If approved, commit only those files
+- After committing, offer to push to remote
+
+### Conditional: renv snapshot [Data Science only]
+
+Only if R packages were installed or updated during this session:
 ```bash
-conda create -n {project_name} python=3.11 numpy pandas matplotlib ipykernel -y
-conda activate {project_name}
+Rscript -e "renv::status()" 2>/dev/null
+```
+If out of sync, ask about `renv::snapshot()`. Include updated `renv.lock` in the commit.
+
+### Conditional: Conda environment export [Data Science only, if Python used]
+
+Only if conda packages were installed or updated during this session:
+```bash
 conda env export --from-history > environment.yml
 ```
-
-Ask the user which additional packages to install.
-
-### Lab policy
-
-- Never install into the `base` environment
-- One conda environment per project, named to match the project
-- Always include `ipykernel` for Quarto compatibility
-- Use `--from-history` for portable `environment.yml`
+Remove the `prefix:` line from the exported file (machine-specific, not portable).
+Include updated `environment.yml` in the commit.
 
 ---
 
-## 5. Write .gitignore
-
-### Data Science .gitignore
-
-```
-# Raw data — read-only, often large; document source in README instead
-data/raw/
-
-# Generated outputs (reproducible from scripts)
-outputs/
-
-# R artifacts
-.Rhistory
-.RData
-.Rproj.user/
-renv/library/
-renv/staging/
-renv/local/
-*_cache/
-
-# Python artifacts
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-
-# Quarto rendering
-*_files/
-.quarto/
-*.html
-
-# Claude Code
-.claude/worktrees/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE settings
-.vscode/
-.positron/
-*.Rproj
-
-# Secrets
-.env
-*.pem
-credentials.json
-```
-
-If cluster project, also add:
-
-```
-# SLURM logs (ephemeral)
-logs/
-```
-
-**Note on `data/raw/`**: Default is to gitignore raw data (often large files). For small
-datasets (<10 MB total), you can remove this line and commit the data directly. Ask the user.
-
-### General .gitignore
-
-```
-# R artifacts
-.Rhistory
-.RData
-.Rproj.user/
-
-# Python artifacts
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-
-# Quarto rendering
-*_files/
-.quarto/
-
-# Claude Code
-.claude/worktrees/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE settings
-.vscode/
-.positron/
-
-# Secrets
-.env
-*.pem
-credentials.json
-```
-
----
-
-## 6. Generate .claude/CLAUDE.md
-
-Fill in project-specific details throughout. Remove any sections not relevant to this project.
-
-### Data Science template
-
-```markdown
-# {Project Name}
-
-{Brief description}
-
-**Project type:** Data science
-**PI:** Valerie Horsley
-**Owner:** {user name}
-**Started:** {date}
-
-## Environment
-
-### R
-- Version: {R version}
-- Package management: renv (see `renv.lock`)
-- Restore with: `renv::restore()`
-
-### Python (if applicable)
-- Conda env: `{project_name}`
-- Activate with: `conda activate {project_name}`
-- Restore with: `conda env create -f environment.yml`
-
-## Project Structure
-
-```
-{project_name}/
-├── data/
-│   ├── raw/          ← original files, never modified
-│   └── processed/    ← cleaned/transformed data
-├── scripts/
-│   ├── 01_qc.Rmd          ← numbered in order of execution
-│   ├── 02_preprocessing.Rmd
-│   └── scratch/           ← exploratory files (not numbered)
-├── outputs/
-│   ├── figures/
-│   └── tables/
-├── docs/              ← notes, protocols, manuscript notes
-└── README.md
-```
-
-## Conventions
-
-- Numbered scripts (`01_`, `02_`, etc.) are the canonical pipeline — run in order
-- Scratch files in `scripts/scratch/` are exploratory — consolidate before finishing
-- Raw data in `data/raw/` is read-only — scripts never write there
-- All outputs go in `outputs/` with descriptive names
-- Use `here::here()` for all file paths — no hardcoded absolute paths
-- Set `set.seed()` before any stochastic operation (clustering, UMAP)
-- Run `renv::snapshot()` after installing new packages
-
-<!-- IF CLUSTER: include this section if Bouchet = yes -->
-## Dual Environment: Local + Bouchet
-
-This project runs on both local machines and Yale's Bouchet HPC cluster.
-
-**Cluster access:**
-- SSH: `ssh {netid}@bouchet.ycrc.yale.edu`
-- Web portal: https://ood-bouchet.ycrc.yale.edu
-- Find your storage paths: run `mydirectories` after logging in
-
-**Cluster paths (Roberts filesystem):**
-- Project storage: `/nfs/roberts/project/{pi_group}/{netid}/{project_name}/`
-- Scratch (60-day purge): accessible via `~/scratch_pi_{pi_netid}`
-
-**Conventions:**
-- Batch scripts in `batch/` use `BASEDIR=$(git rev-parse --show-toplevel)` — no hardcoded paths
-- Large data files and outputs live on the cluster; only code and metadata are committed to git
-- SLURM logs go in `logs/` (gitignored — ephemeral)
-- Scratch storage is purged after 60 days — do not use for long-term storage
-<!-- END IF CLUSTER -->
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `data/raw/` | Input data — never modified |
-| `scripts/01_*.Rmd` | Start here |
-| `outputs/figures/` | All figures |
-| `renv.lock` | R package versions |
-```
-
-### General project template
-
-```markdown
-# {Project Name}
-
-{Brief description}
-
-**Project type:** General
-**PI:** Valerie Horsley
-**Owner:** {user name}
-**Started:** {date}
-
-## Conventions
-
-- Use `here::here()` for file paths where applicable
-- Document dependencies in README
-
-## Notes
-
-(Add project-specific context here as it develops)
-```
-
-### Project reminders file
-
-Create `.claude/project-reminders.txt`:
-
-```
-CRITICAL REMINDERS (re-injected after context compaction):
-1. (Add project-specific rules here as the project develops)
-2. Check planning documents before modifying scripts
-3. Never silently default unmatched data or metadata
-```
-
-Tell the user: *"I created `.claude/project-reminders.txt` — edit this as you discover rules
-that Claude keeps forgetting after long sessions."*
-
----
-
-## 7. Generate README.md
-
-### Data Science README
-
-````markdown
-# {Project Name}
-
-{Brief description}
-
-**PI:** Valerie Horsley | **Contact:** valerie.horsley@yale.edu
-
-## Setup
-
-### R
-```r
-# renv auto-activates via .Rprofile
-renv::restore()
-```
-
-### Python (if applicable)
-```bash
-conda env create -f environment.yml
-conda activate {project_name}
-```
-
-## Data
-
-(Document data sources and how to obtain them)
-
-## Running the Analysis
-
-Run numbered scripts in order:
-1. `scripts/01_qc.Rmd` — {brief description}
-2. `scripts/02_preprocessing.Rmd` — {brief description}
-...
-````
-
-### General README
-
-````markdown
-# {Project Name}
-
-{Brief description}
-
-**PI:** Valerie Horsley | **Contact:** valerie.horsley@yale.edu
-
-## Setup
-
-{Document prerequisites and setup steps as the project develops}
-
-## Usage
-
-{Document how to use the project}
-````
-
----
-
-## 8. Create CHANGELOG.md (if requested)
-
-```markdown
-# Changelog
-
-## {today's date}
-
-### Added
-- Initial project setup
-```
-
----
-
-## 9. Git + GitHub
-
-```bash
-git init
-git add .
-git commit -m "Initial project setup"
-```
-
-Create the remote:
-
-```bash
-# Personal account, private (default)
-gh repo create vhorsley/{project_name} --private --source=. --push
-
-# Personal account, public
-gh repo create vhorsley/{project_name} --public --source=. --push
-```
-
----
-
-## 10. Summary
-
-### Data Science summary
-
-```
-Project "{project_name}" created successfully!
-
-  Type: Data science ({flat/sectioned})
-  Languages: {R only / R + Python}
-  renv: initialized
-  Cluster: {Bouchet / local only}
-  GitHub: {url}
-
-Next steps:
-  1. Add data to data/raw/ (or document source in README)
-  2. Create your first script: scripts/01_import.Rmd
-  3. Edit .claude/project-reminders.txt as the project develops
-```
-
-### General summary
-
-```
-Project "{project_name}" created successfully!
-
-  Type: General
-  GitHub: {url}
-
-Next steps:
-  1. Start adding code and documentation
-  2. Update .claude/CLAUDE.md as the project develops
-```
+## 6. Final Summary
+
+Brief "Session complete" message listing:
+- Files created/modified
+- Commits made
+- Planning documents updated
+- Key decisions recorded
+- Follow-up items for next session
