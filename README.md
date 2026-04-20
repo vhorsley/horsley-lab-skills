@@ -1,70 +1,33 @@
 # Horsley Lab Claude Skills
 
-Custom [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills for the Horsley Lab at Yale. These skills teach Claude our lab's conventions for data analysis, figure preparation, and scientific writing.
+Custom Claude skills for the Horsley Lab at Yale. These skills help Claude
+understand our lab's conventions and workflows — for grant writing, manuscript
+preparation, protocols, and data analysis.
 
-## What are skills?
+## What is a skill?
 
-Claude Code skills are markdown files that give Claude specific instructions for particular tasks — how to organize an analysis project, how to audit a script, how to structure a figure. Each skill has a short **description** that tells Claude when to activate it, and a **body** with the actual instructions.
+A skill is a small file that teaches Claude how to handle specific tasks the
+way *we* want them done. Once installed, it activates automatically when
+relevant.
 
-There are two kinds:
+## How to install a skill
 
-- **Automatic skills** load on their own when Claude detects a relevant task. For example, when you ask Claude to set up a new analysis project, `horsley-lab-conventions` loads automatically.
-- **User-invoked skills** (slash commands) are triggered by typing a command like `/audit-script`. These run specific workflows on demand.
+1. Download the `.skill` file from the `releases/` folder
+2. In Claude.ai, go to **Settings → Skills → Add Skill**
+3. Upload the `.skill` file
+4. Done — the skill will be active in all your conversations
 
-## Prerequisites
+## Available skills
 
-You need [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed before adding lab skills. See [Anthropic's install guide](https://docs.anthropic.com/en/docs/claude-code/overview) to get started.
-
-## Install
-
-**In Positron / VS Code:**
-
-1. Type `/plugins` in the Claude Code chat panel to open the plugin manager
-2. Go to the **Marketplaces** tab
-3. Add `vhorsley/horsley-lab-skills`
-4. Switch to the **Plugins** tab and install `horsley-lab-skills`
-
-**In the terminal CLI:**
-
-```
-/plugin marketplace add vhorsley/horsley-lab-skills
-/plugin install horsley-lab-skills
-```
-
-Skills are then available as `/horsley-lab-skills:skill-name` (e.g., `/horsley-lab-skills:audit-script`).
-
-## Updates
-
-Skills update automatically when you restart Claude Code. To update manually:
-
-```
-/plugin uninstall horsley-lab-skills
-/plugin install horsley-lab-skills
-```
-
-## Skill reference
-
-### Workflows (slash commands)
-
-| Skill | Description |
-|-------|-------------|
-| `/audit-script` | Systematic audit of data analysis scripts for bugs, analytical reasoning, data handling, style, and reproducibility |
-
-### Data analysis conventions
-
-| Skill | Description |
-|-------|-------------|
-| `horsley-lab-conventions` | Standard project and script organization for R-based data analysis |
-| `cleanup-scripts` | End-of-session script consolidation — moves scratch files into numbered `.Rmd` pipeline |
-
-### Figures and writing
-
-| Skill | Description |
+| Skill | What it does |
 |-------|-------------|
 | `horsley-figures` | Drafts and organizes figures |
 
-## Improving skills
+## Updating a skill
 
-If a skill does something wrong, doesn't handle a situation you ran into, or you have an idea for a new one — open a GitHub issue or email [valerie.horsley@yale.edu](mailto:valerie.horsley@yale.edu).
+When a skill is updated, download the new `.skill` file from `releases/` and
+reinstall it in Settings. Your old version won't update automatically.
 
-When reporting, include which skill was involved, what happened, and what you expected.
+## Questions or suggestions
+
+Open an issue or email [vhorsley@yale.edu](mailto:vhorsley@yale.edu).
