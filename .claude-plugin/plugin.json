@@ -1,0 +1,8 @@
+{
+  "name": "horsley-lab-skills",
+  "description": "Lab conventions for data analysis, reproducibility, and code organization in Claude Code",
+  "version": "1.0.0",
+  "author": {
+    "name": "HorsleyLab"
+  }
+}

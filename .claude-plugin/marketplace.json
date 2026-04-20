@@ -1,0 +1,12 @@
+{
+  "name": "horsley-lab",
+  "owner": {
+    "name": "vhorsley"
+  },
+  "plugins": [
+    {
+      "name": "horsley-lab-skills",
+      "source": "./"
+    }
+  ]
+}
